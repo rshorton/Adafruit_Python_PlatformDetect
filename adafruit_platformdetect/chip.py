@@ -344,7 +344,7 @@ class Chip:
                     linux_id = chips.CELERON_N5105
                 elif "X5-Z8350" in model_name:
                     linux_id = chips.ATOM_X5_Z8350
-                elif "J4105" in model_name:
+                elif "J4105" in model_name or "J4125" in model_name:
                     linux_id = chips.ATOM_J4105
                 else:
                     linux_id = chips.GENERIC_X86
