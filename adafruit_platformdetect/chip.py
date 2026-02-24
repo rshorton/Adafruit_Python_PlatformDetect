@@ -194,7 +194,10 @@ class Chip:
         if platform == "pyboard":
             self._chip_id = chips.STM32F405
             return self._chip_id
-        if platform == "rp2":
+        if platform == "rp2" and "RP2350" in os.uname().machine:
+            self._chip_id = chips.RP2350
+            return self._chip_id
+        if platform == "rp2" and "RP2040" in os.uname().machine:
             self._chip_id = chips.RP2040
             return self._chip_id
         # nothing found!
