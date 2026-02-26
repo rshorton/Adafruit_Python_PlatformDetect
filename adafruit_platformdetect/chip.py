@@ -84,6 +84,18 @@ class Chip:
                     )
                 self._chip_id = chips.FT2232H
                 return self._chip_id
+            if os.environ.get("BLINKA_FT4232H"):
+                from pyftdi.usbtools import UsbTools
+
+                # look for it based on PID/VID
+                count = len(UsbTools.find_all([(0x0403, 0x6011)]))
+                if count == 0:
+                    raise RuntimeError(
+                        "BLINKA_FT4232H environment variable "
+                        + "set, but no FT4232H device found"
+                    )
+                self._chip_id = chips.FT4232H
+                return self._chip_id
             if os.environ.get("BLINKA_MCP2221"):
                 import hid
 
@@ -96,6 +108,9 @@ class Chip:
                     "BLINKA_MCP2221 environment variable "
                     + "set, but no MCP2221 device found"
                 )
+            if os.environ.get("BLINKA_SPIDRIVER"):
+                self._chip_id = chips.SPIDRIVER
+                return self._chip_id
             if os.environ.get("BLINKA_OS_AGNOSTIC"):
                 # we don't need to look for this chip, it's just a flag
                 self._chip_id = chips.OS_AGNOSTIC
@@ -113,7 +128,8 @@ class Chip:
                     if (
                         (
                             # Raspberry Pi Pico
-                            vendor == 0xCAFE
+                            # Radxa X4
+                            vendor in (0xCAFE, 0xCAFF)
                             and product == 0x4005
                         )
                         or (
@@ -178,7 +194,10 @@ class Chip:
         if platform == "pyboard":
             self._chip_id = chips.STM32F405
             return self._chip_id
-        if platform == "rp2":
+        if platform == "rp2" and "RP2350" in os.uname().machine:
+            self._chip_id = chips.RP2350
+            return self._chip_id
+        if platform == "rp2" and "RP2040" in os.uname().machine:
             self._chip_id = chips.RP2040
             return self._chip_id
         # nothing found!
@@ -261,6 +280,9 @@ class Chip:
         if self.detector.check_dt_compatible_value("rockchip,rk3568"):
             return chips.RK3568
 
+        if self.detector.check_dt_compatible_value("rockchip,rk3588s"):
+            return chips.RK3588S
+
         if self.detector.check_dt_compatible_value("rockchip,rk3588"):
             return chips.RK3588
 
@@ -297,8 +319,17 @@ class Chip:
         if self.detector.check_dt_compatible_value("sun50i-h6"):
             return chips.H6
 
+        if self.detector.check_dt_compatible_value("sun55iw3"):
+            return chips.T527
+
         if self.detector.check_dt_compatible_value("spacemit,k1-x"):
             return chips.K1
+
+        if self.detector.check_dt_compatible_value("renesas,r9a09g056"):
+            return chips.RZV2N
+
+        if self.detector.check_dt_compatible_value("renesas,r9a09g057"):
+            return chips.RZV2H
 
         if self.detector.check_dt_compatible_value("mediatek,mt8167"):
             return chips.MT8167
@@ -320,6 +351,15 @@ class Chip:
 
         if self.detector.check_dt_compatible_value("light-lpi4a"):
             return chips.TH1520
+
+        if self.detector.check_dt_compatible_value("hobot,x3"):
+            return chips.SUNRISE_X3
+
+        if self.detector.check_dt_compatible_value("Horizon, x5"):
+            return chips.SUNRISE_X5
+
+        if self.detector.check_dt_compatible_value("particle,tachyon"):
+            return chips.QCM6490
 
         linux_id = None
         hardware = self.detector.get_cpuinfo_field("Hardware")
@@ -361,6 +401,8 @@ class Chip:
                     linux_id = chips.T194
                 elif "nvidia,tegra234" in compats:
                     linux_id = chips.T234
+                elif "nvidia,tegra264" in compats:
+                    linux_id = chips.T264
             if compatible and "imx8m" in compatible:
                 linux_id = chips.IMX8MX
             if compatible and "odroid-c2" in compatible:
@@ -388,6 +430,8 @@ class Chip:
                 linux_id = chips.EXYNOS5422
             if compatible and "cvitek,cv180x" in compatible:
                 linux_id = chips.CV1800B
+            if compatible and "xlnx,zynqmp" in compatible:
+                linux_id = chips.ZYNQMP
             cpu_model = self.detector.get_cpuinfo_field("cpu model")
 
             if cpu_model is not None:
